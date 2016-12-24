@@ -8,18 +8,17 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
  */
 public class Car extends Sprite {
     private final float LENGTH;
-    private final float TURNING_TOLERANCE = .001f;
+    private final float TURNING_TOLERANCE = .00001f;
     private final double MAX_STEERING_ANGLE = Math.PI / 4;
 
     public Car(float length) {
         super(new Texture("redcar.png"));
         this.LENGTH = length;
-        this.setOrigin(this.getWidth()/2, length/6);
+        this.setOrigin(length/6, this.getHeight()/2);
     }
 
 
-    public void move(float distance, float steering) {
-
+    void move(float distance, float steering) {
         if (distance < 0.0) {
             throw new IllegalArgumentException("Moving backwards is not supported");
         }
@@ -52,7 +51,7 @@ public class Car extends Sprite {
     }
 
 
-    public float getRotationInRad() {
+    private float getRotationInRad() {
         return (float) Math.toRadians(super.getRotation());
     }
 }

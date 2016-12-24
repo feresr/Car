@@ -8,12 +8,13 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 public class Main extends ApplicationAdapter {
     private SpriteBatch batch;
     private Car car;
-    private float ds = 4.932f;
+    private float ds = 0.2f;
 
     @Override
     public void create() {
         batch = new SpriteBatch();
-        car = new Car(216);
+        car = new Car(80);
+        car.setX(130);
     }
 
     @Override
@@ -22,9 +23,9 @@ public class Main extends ApplicationAdapter {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         batch.begin();
 
-        car.move(2f, ds);
+        car.move(1f, ds);
         car.draw(batch);
-        //todo draw
+
         batch.end();
     }
 
