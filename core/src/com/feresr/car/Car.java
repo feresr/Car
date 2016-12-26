@@ -8,6 +8,9 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
  */
 public class Car extends Sprite {
     private final float LENGTH;
+    private float steering = 0.0f;
+    private float velocity = 1.0f;
+
     private final float TURNING_TOLERANCE = .00001f;
     private final double MAX_STEERING_ANGLE = Math.PI / 4;
 
@@ -17,9 +20,16 @@ public class Car extends Sprite {
         this.setOrigin(length/6, this.getHeight()/2);
     }
 
+    public void setSteering(float steering) {
+        this.steering = steering;
+    }
 
-    void move(float distance, float steering) {
-        if (distance < 0.0) {
+    public void setVelocity(float velocity) {
+        this.velocity = velocity;
+    }
+
+    void move() {
+        if (velocity < 0.0) {
             throw new IllegalArgumentException("Moving backwards is not supported");
         }
 
@@ -31,10 +41,10 @@ public class Car extends Sprite {
             }
         }
 
-        float turningAngle = (float) ((distance / LENGTH) * Math.tan(steering));
+        float turningAngle = (float) ((velocity / LENGTH) * Math.tan(steering));
 
         if (Math.abs(turningAngle) > TURNING_TOLERANCE) {
-            float turningRadius = distance / turningAngle;
+            float turningRadius = velocity / turningAngle;
 
             float cx = (float) (this.getX() - Math.sin(this.getRotationInRad()) * turningRadius);
             float cy = (float) (this.getY() + Math.cos(this.getRotationInRad()) * turningRadius);
@@ -43,8 +53,8 @@ public class Car extends Sprite {
             this.setY((float) (cy - Math.cos(turningAngle + this.getRotationInRad()) * turningRadius));
         } else {
             //assume straight motion
-            this.setX((float) (this.getX() + (distance * Math.cos(this.getRotationInRad()))));
-            this.setY((float) (this.getY() + (distance * Math.sin(this.getRotationInRad()))));
+            this.setX((float) (this.getX() + (velocity * Math.cos(this.getRotationInRad()))));
+            this.setY((float) (this.getY() + (velocity * Math.sin(this.getRotationInRad()))));
         }
 
         this.setRotation((float) Math.toDegrees(((turningAngle + this.getRotationInRad()) % (2.0 * Math.PI))));
