@@ -10,36 +10,49 @@ public class Main extends ApplicationAdapter {
     private Car car;
     private float P = 0.0289f;
     private float D = 2.8612f;
-    private float I = 0.0f;
 
+    private float I = 0.0f;
     private float ctesum = 0f;
     private float oldcte = 0f;
+
     private float cte = 0f;
 
     int u = 0;
-    private float[][] path = new float[4][2];
+    private float[][] path = new float[8][2];
 
     @Override
     public void create() {
         batch = new SpriteBatch();
         car = new Car(80);
-        car.setX(0);
-        car.setY(0);
-        car.setVelocity(1f);
+        car.setX(100);
+        car.setY(100);
+        car.setVelocity(3f);
 
-        path[0][0] = 0.0f;
-        path[0][1] = 0.0f;
+        path[0][0] = 100;
+        path[0][1] = 100;
 
-        path[1][0] = Gdx.app.getGraphics().getWidth()/2;
-        path[1][1] = 0;
+        path[1][0] = 200;
+        path[1][1] = 80;
 
-        path[2][0] = Gdx.app.getGraphics().getWidth()*2/3;
-        path[2][1] = Gdx.app.getGraphics().getHeight()*2/3;
+        path[2][0] = 400f;
+        path[2][1] = 100f;
 
-        path[3][0] = Gdx.app.getGraphics().getWidth();
-        path[3][1] = Gdx.app.getGraphics().getHeight();
+        path[3][0] = 480f;
+        path[3][1] = 200f;
 
-        twiddle(.00002f);
+        path[4][0] = 400f;
+        path[4][1] = 400f;
+
+        path[5][0] = 200f;
+        path[5][1] = 480f;
+
+        path[6][0] = 100f;
+        path[6][1] = 400f;
+
+        path[7][0] = 80f;
+        path[7][1] = 200f;
+
+        path = smoothPathCircular(path, .5f, .1f, .000001f);
     }
 
     @Override
@@ -48,24 +61,23 @@ public class Main extends ApplicationAdapter {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         batch.begin();
 
-        if (u < path.length - 1 ) {
-            float dx = path[u + 1][0] - path[u][0];
-            float dy = path[u + 1][1] - path[u][1];
-            float rx = car.getX() - path[u][0];
-            float ry = car.getY() - path[u][1];
+        float dx = path[(u + 1) % path.length][0] - path[u % path.length][0];
+        float dy = path[(u + 1) % path.length][1] - path[u % path.length][1];
+        float rx = car.getX() - path[u % path.length][0];
+        float ry = car.getY() - path[u % path.length][1];
 
-            oldcte = cte;
-            cte = (float) ((ry * dx - rx * dy) / Math.sqrt(dx * dx + dy * dy));
-            ctesum += cte;
-            System.out.println(u);
-            float s = -(P * cte) - (D * (cte - oldcte)) - (I * ctesum);
-            if (Math.abs((rx * dx + ry * dy) / (dx * dx + dy * dy)) > 1.0) {
-                System.out.println(s);
-                u++;
-            }
-            car.setSteering(s);
-            car.move();
+        oldcte = cte;
+        cte = (float) ((ry * dx - rx * dy) / Math.sqrt(dx * dx + dy * dy));
+        ctesum += cte;
+        System.out.println(u);
+        float s = -(P * cte) - (D * (cte - oldcte)) - (I * ctesum);
+        if (Math.abs((rx * dx + ry * dy) / (dx * dx + dy * dy)) > 1.0) {
+            System.out.println(s);
+            u++;
         }
+        car.setSteering(s);
+        car.move();
+
         car.draw(batch);
         batch.end();
     }
@@ -79,7 +91,7 @@ public class Main extends ApplicationAdapter {
     private float run(float[] params) {
         Car car = new Car(80);
         car.setX(0);
-        car.setY(200);
+        car.setY(80);
         car.setVelocity(1f);
 
         float crosstrack_error = car.getY();
@@ -104,6 +116,52 @@ public class Main extends ApplicationAdapter {
         }
 
         return err / N;
+    }
+
+    private float[][] smoothPath(float[][] path, float weightData, float weightSmooth, float tolerance) {
+        float[][] smoothPath = new float[path.length][path[0].length];
+
+        for (int i = 0; i < path.length; i++) {
+            System.arraycopy(path[i], 0, smoothPath[i], 0, path[0].length);
+        }
+
+        float change = tolerance;
+        float aux;
+        while (change >= tolerance) {
+            change = 0;
+            for (int i = 1; i < path.length - 1; i++) {
+                for (int j = 0; j < path[0].length; j++) {
+                    aux = smoothPath[i][j];
+                    smoothPath[i][j] += weightData * (path[i][j] - smoothPath[i][j])
+                            + weightSmooth * (smoothPath[i - 1][j] + smoothPath[i + 1][j] - (2.0 * smoothPath[i][j]));
+                    change += Math.abs(aux - smoothPath[i][j]);
+                }
+            }
+        }
+        return smoothPath;
+    }
+
+    private float[][] smoothPathCircular(float[][] path, float weightData, float weightSmooth, float tolerance) {
+        float[][] smoothPath = new float[path.length][path[0].length];
+
+        for (int i = 0; i < path.length; i++) {
+            System.arraycopy(path[i], 0, smoothPath[i], 0, path[0].length);
+        }
+
+        float change = tolerance;
+        float aux;
+        int index = 1;
+        while (change >= tolerance) {
+            change = 0;
+            for (int j = 0; j < path[0].length; j++) {
+                aux = smoothPath[index % smoothPath.length][j];
+                smoothPath[index % path.length][j] += weightData * (path[index % path.length][j] - smoothPath[index % smoothPath.length][j])
+                        + weightSmooth * (smoothPath[(index + 1) % smoothPath.length][j] + smoothPath[(index - 1) % smoothPath.length][j] - (2.0f * smoothPath[index % smoothPath.length][j]));
+                change += Math.abs(aux - smoothPath[index % smoothPath.length][j]);
+            }
+            index++;
+        }
+        return smoothPath;
     }
 
     private float twiddle(float tolerance) {
@@ -139,7 +197,7 @@ public class Main extends ApplicationAdapter {
         return run(p);
     }
 
-    public float sum(float[] array) {
+    private float sum(float[] array) {
         float sum = 0.0f;
         for (float anArray : array) {
             sum += anArray;
